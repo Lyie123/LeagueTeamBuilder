@@ -1,11 +1,13 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import SGDClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 
 class TimeScaler(BaseEstimator, TransformerMixin):
@@ -65,6 +67,7 @@ categories = [
 num_pipeline = Pipeline([
 	('time_scaler', TimeScaler()),
 	('std_scaler', StandardScaler()),
+	('min_max_scaler', MinMaxScaler())
 ])
 
 full_pipeline = ColumnTransformer([
@@ -74,8 +77,13 @@ full_pipeline = ColumnTransformer([
 
 
 X_train_prepared = full_pipeline.fit_transform(X_train)
-sgd_clf = SGDClassifier(random_state=42)
-sgd_clf.fit(X_train_prepared, y_train.values.ravel())
+sgd_clf = RandomForestClassifier(random_state=44)
 
-X_test_prepared = full_pipeline.fit_transform(X_test)
-print(sgd_clf.score(X_test_prepared, y_test))
+score = cross_val_score(sgd_clf, X_train_prepared, y_train.values.ravel(), cv=3, scoring='accuracy')
+print(score)
+
+sgd_clf = sgd_clf.fit(X_train_prepared, y_train.values.ravel())
+
+disp = ConfusionMatrixDisplay.from_estimator(sgd_clf, full_pipeline.fit_transform(X_test), y_test.values.ravel(), normalize='true')
+
+plt.show()
